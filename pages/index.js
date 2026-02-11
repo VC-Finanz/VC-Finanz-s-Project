@@ -2,13 +2,16 @@ import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 
 const STATUS = [
-  { id: 'erstkontakt', label: 'Erstkontakt', color: 'bg-blue-500' },
-  { id: 'konzept', label: 'Konzept', color: 'bg-amber-500' },
-  { id: 'telefonliste', label: 'Telefonliste/BN Bezüge', color: 'bg-purple-500' },
-  { id: 'abschluss', label: 'Abschluss', color: 'bg-green-500' },
+  { id: 'erstkontakt', label: 'Erstkontakt', color: '#3b82f6' },
+  { id: 'konzept', label: 'Konzept', color: '#c9a227' },
+  { id: 'telefonliste', label: 'Telefonliste/BN Bezüge', color: '#8b5cf6' },
+  { id: 'abschluss', label: 'Abschluss', color: '#10b981' },
 ]
 
 const TAGS = ['VIP', 'Privat', 'Gewerbe', 'BU-Interesse', 'Altersvorsorge', 'Bestandskunde', 'Empfehlung']
+
+const NAVY = '#1e3a5f'
+const GOLD = '#c9a227'
 
 export default function CRM() {
   const [user, setUser] = useState(null)
@@ -29,6 +32,10 @@ export default function CRM() {
   const loadData = async () => {
     const { data } = await supabase.from('customers').select('*, contacts(*), appointments(*)').order('created_at', { ascending: false })
     setCustomers(data || [])
+    if (selected) {
+      const updated = data?.find(c => c.id === selected.id)
+      if (updated) setSelected(updated)
+    }
   }
 
   const login = async (u, p) => {
@@ -66,7 +73,6 @@ export default function CRM() {
   const updateStatus = async (id, status) => {
     await supabase.from('customers').update({ status }).eq('id', id)
     loadData()
-    if (selected?.id === id) setSelected(p => ({ ...p, status }))
   }
 
   const addContact = async () => {
@@ -96,61 +102,83 @@ export default function CRM() {
   })
 
   const stats = STATUS.reduce((a, s) => ({ ...a, [s.id]: customers.filter(c => c.status === s.id).length }), {})
-
-  const upcoming = customers.flatMap(c => (c.appointments || []).map(a => ({ ...a, customer: c.name, cid: c.id })))
-    .sort((a, b) => new Date(a.date) - new Date(b.date)).slice(0, 5)
+  const upcoming = customers.flatMap(c => (c.appointments || []).map(a => ({ ...a, customer: c.name, cid: c.id }))).sort((a, b) => new Date(a.date) - new Date(b.date)).slice(0, 5)
 
   if (!user) return <Login onLogin={login} />
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', background: '#f1f5f9' }}>
-      <aside style={{ width: 250, background: 'white', borderRight: '1px solid #e2e8f0', padding: 20, display: 'flex', flexDirection: 'column' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 40 }}>
-          <div style={{ width: 40, height: 40, background: 'linear-gradient(135deg, #3b82f6, #10b981)', borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 'bold' }}>C</div>
-          <span style={{ fontWeight: 'bold', fontSize: 18 }}>Mini CRM</span>
+    <div style={{ display: 'flex', minHeight: '100vh', background: '#f8f9fa', fontFamily: "'Segoe UI', system-ui, sans-serif" }}>
+      <aside style={{ width: 280, background: NAVY, padding: '24px 16px', display: 'flex', flexDirection: 'column' }}>
+        <div style={{ marginBottom: 48, padding: '0 8px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+              <div style={{ width: 8, height: 32, background: NAVY, border: '2px solid ' + GOLD, marginRight: 4 }}></div>
+              <div style={{ width: 16, height: 16, borderBottom: '3px solid ' + GOLD, borderRight: '3px solid ' + GOLD, transform: 'rotate(45deg)', marginTop: -12 }}></div>
+            </div>
+            <div>
+              <div style={{ color: GOLD, fontSize: 22, fontWeight: 700, letterSpacing: 1 }}>V&C</div>
+              <div style={{ color: GOLD, fontSize: 14, fontWeight: 600, letterSpacing: 3 }}>FINANZ</div>
+            </div>
+          </div>
         </div>
-        <button onClick={() => setView('dashboard')} style={{ width: '100%', padding: '12px 16px', textAlign: 'left', border: 'none', borderRadius: 12, marginBottom: 8, cursor: 'pointer', background: view === 'dashboard' ? '#eff6ff' : 'transparent', color: view === 'dashboard' ? '#3b82f6' : '#475569', fontWeight: 500 }}>📊 Dashboard</button>
-        <button onClick={() => setView('customers')} style={{ width: '100%', padding: '12px 16px', textAlign: 'left', border: 'none', borderRadius: 12, cursor: 'pointer', background: view === 'customers' || view === 'detail' ? '#eff6ff' : 'transparent', color: view === 'customers' || view === 'detail' ? '#3b82f6' : '#475569', fontWeight: 500 }}>👥 Kunden</button>
-        <div style={{ marginTop: 'auto', paddingTop: 20, borderTop: '1px solid #e2e8f0' }}>
-          <div style={{ fontSize: 14, color: '#64748b' }}>{user.name}</div>
-          <button onClick={() => setUser(null)} style={{ color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer', fontSize: 14, marginTop: 8 }}>Logout</button>
+        <nav style={{ flex: 1 }}>
+          <button onClick={() => setView('dashboard')} style={{ width: '100%', padding: '14px 20px', textAlign: 'left', border: 'none', borderRadius: 8, marginBottom: 8, cursor: 'pointer', background: view === 'dashboard' ? 'rgba(201,162,39,0.15)' : 'transparent', color: view === 'dashboard' ? GOLD : 'rgba(255,255,255,0.7)', fontWeight: 500, fontSize: 15, display: 'flex', alignItems: 'center', gap: 12, transition: 'all 0.2s' }}>
+            <span style={{ fontSize: 18 }}>📊</span> Dashboard
+          </button>
+          <button onClick={() => setView('customers')} style={{ width: '100%', padding: '14px 20px', textAlign: 'left', border: 'none', borderRadius: 8, cursor: 'pointer', background: view === 'customers' || view === 'detail' ? 'rgba(201,162,39,0.15)' : 'transparent', color: view === 'customers' || view === 'detail' ? GOLD : 'rgba(255,255,255,0.7)', fontWeight: 500, fontSize: 15, display: 'flex', alignItems: 'center', gap: 12, transition: 'all 0.2s' }}>
+            <span style={{ fontSize: 18 }}>👥</span> Kunden
+          </button>
+        </nav>
+        <div style={{ borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: 20, marginTop: 20 }}>
+          <div style={{ color: 'rgba(255,255,255,0.9)', fontSize: 14, fontWeight: 500, marginBottom: 4 }}>{user.name}</div>
+          <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: 12, marginBottom: 12 }}>{user.username}</div>
+          <button onClick={() => setUser(null)} style={{ color: GOLD, background: 'transparent', border: '1px solid ' + GOLD, padding: '8px 16px', borderRadius: 6, cursor: 'pointer', fontSize: 13, fontWeight: 500, transition: 'all 0.2s' }}>Abmelden</button>
         </div>
       </aside>
 
-      <main style={{ flex: 1, padding: 32 }}>
+      <main style={{ flex: 1, padding: 32, overflowY: 'auto' }}>
         {view === 'dashboard' && (
           <div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-              <div><h1 style={{ margin: 0, fontSize: 28 }}>Dashboard</h1><p style={{ color: '#64748b', margin: '4px 0 0' }}>Willkommen, {user.name}</p></div>
-              <button onClick={() => { setForm({}); setShowForm(true) }} style={{ padding: '12px 20px', background: '#3b82f6', color: 'white', border: 'none', borderRadius: 12, cursor: 'pointer', fontWeight: 500 }}>+ Neuer Kunde</button>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 32 }}>
+              <div>
+                <h1 style={{ margin: 0, fontSize: 28, color: NAVY, fontWeight: 700 }}>Dashboard</h1>
+                <p style={{ color: '#64748b', margin: '8px 0 0', fontSize: 15 }}>Willkommen zurück, {user.name}</p>
+              </div>
+              <button onClick={() => { setForm({}); setShowForm(true) }} style={{ padding: '14px 28px', background: GOLD, color: NAVY, border: 'none', borderRadius: 8, cursor: 'pointer', fontWeight: 600, fontSize: 14, boxShadow: '0 4px 14px rgba(201,162,39,0.35)', transition: 'all 0.2s' }}>+ Neuer Kunde</button>
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 32 }}>
+            
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 20, marginBottom: 32 }}>
               {STATUS.map(s => (
-                <div key={s.id} style={{ background: 'white', padding: 20, borderRadius: 16, boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <div style={{ width: 12, height: 12, borderRadius: '50%', background: s.color === 'bg-blue-500' ? '#3b82f6' : s.color === 'bg-amber-500' ? '#f59e0b' : s.color === 'bg-purple-500' ? '#8b5cf6' : '#10b981' }}></div>
-                    <span style={{ fontSize: 14, color: '#64748b' }}>{s.label}</span>
-                  </div>
-                  <div style={{ fontSize: 36, fontWeight: 'bold', marginTop: 8 }}>{stats[s.id] || 0}</div>
+                <div key={s.id} style={{ background: 'white', padding: 24, borderRadius: 12, boxShadow: '0 2px 8px rgba(0,0,0,0.06)', borderLeft: '4px solid ' + s.color }}>
+                  <div style={{ fontSize: 13, color: '#64748b', fontWeight: 500, textTransform: 'uppercase', letterSpacing: 0.5 }}>{s.label}</div>
+                  <div style={{ fontSize: 42, fontWeight: 700, color: NAVY, marginTop: 8 }}>{stats[s.id] || 0}</div>
                 </div>
               ))}
             </div>
+
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24 }}>
-              <div style={{ background: 'white', borderRadius: 16, boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
-                <div style={{ padding: 16, borderBottom: '1px solid #e2e8f0', fontWeight: 600 }}>📅 Nächste Termine</div>
-                {upcoming.length === 0 ? <p style={{ padding: 16, color: '#94a3b8' }}>Keine Termine</p> : upcoming.map((a, i) => (
-                  <div key={i} style={{ padding: 16, borderBottom: '1px solid #f1f5f9', cursor: 'pointer' }} onClick={() => { setSelected(customers.find(c => c.id === a.cid)); setView('detail') }}>
-                    <div style={{ fontWeight: 500 }}>{a.title}</div>
-                    <div style={{ fontSize: 14, color: '#64748b' }}>{a.customer} • {a.date} {a.time}</div>
+              <div style={{ background: 'white', borderRadius: 12, boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
+                <div style={{ padding: '20px 24px', borderBottom: '1px solid #eef2f6', fontWeight: 600, color: NAVY, fontSize: 16, display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <span>📅</span> Nächste Termine
+                </div>
+                {upcoming.length === 0 ? <p style={{ padding: 24, color: '#94a3b8', textAlign: 'center' }}>Keine anstehenden Termine</p> : upcoming.map((a, i) => (
+                  <div key={i} style={{ padding: '16px 24px', borderBottom: '1px solid #f8f9fa', cursor: 'pointer', transition: 'background 0.2s' }} onClick={() => { setSelected(customers.find(c => c.id === a.cid)); setView('detail') }}>
+                    <div style={{ fontWeight: 600, color: NAVY }}>{a.title}</div>
+                    <div style={{ fontSize: 13, color: '#64748b', marginTop: 4 }}>{a.customer} • {a.date} {a.time && 'um ' + a.time}</div>
                   </div>
                 ))}
               </div>
-              <div style={{ background: 'white', borderRadius: 16, boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
-                <div style={{ padding: 16, borderBottom: '1px solid #e2e8f0', fontWeight: 600 }}>👥 Neueste Kunden</div>
+              <div style={{ background: 'white', borderRadius: 12, boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
+                <div style={{ padding: '20px 24px', borderBottom: '1px solid #eef2f6', fontWeight: 600, color: NAVY, fontSize: 16, display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <span>👥</span> Neueste Kunden
+                </div>
                 {customers.slice(0, 5).map(c => (
-                  <div key={c.id} style={{ padding: 16, borderBottom: '1px solid #f1f5f9', cursor: 'pointer', display: 'flex', justifyContent: 'space-between' }} onClick={() => { setSelected(c); setView('detail') }}>
-                    <div><div style={{ fontWeight: 500 }}>{c.name}</div><div style={{ fontSize: 14, color: '#64748b' }}>{c.company || c.email}</div></div>
-                    <span style={{ padding: '4px 12px', borderRadius: 20, fontSize: 12, color: 'white', background: c.status === 'erstkontakt' ? '#3b82f6' : c.status === 'konzept' ? '#f59e0b' : c.status === 'telefonliste' ? '#8b5cf6' : '#10b981' }}>{STATUS.find(s => s.id === c.status)?.label}</span>
+                  <div key={c.id} style={{ padding: '16px 24px', borderBottom: '1px solid #f8f9fa', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', transition: 'background 0.2s' }} onClick={() => { setSelected(c); setView('detail') }}>
+                    <div>
+                      <div style={{ fontWeight: 600, color: NAVY }}>{c.name}</div>
+                      <div style={{ fontSize: 13, color: '#64748b' }}>{c.company || c.email}</div>
+                    </div>
+                    <span style={{ padding: '6px 14px', borderRadius: 6, fontSize: 12, color: 'white', fontWeight: 500, background: STATUS.find(s => s.id === c.status)?.color }}>{STATUS.find(s => s.id === c.status)?.label}</span>
                   </div>
                 ))}
               </div>
@@ -160,113 +188,123 @@ export default function CRM() {
 
         {view === 'customers' && (
           <div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-              <h1 style={{ margin: 0, fontSize: 28 }}>Kunden</h1>
-              <button onClick={() => { setForm({}); setShowForm(true) }} style={{ padding: '12px 20px', background: '#3b82f6', color: 'white', border: 'none', borderRadius: 12, cursor: 'pointer', fontWeight: 500 }}>+ Neuer Kunde</button>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 32 }}>
+              <h1 style={{ margin: 0, fontSize: 28, color: NAVY, fontWeight: 700 }}>Kunden</h1>
+              <button onClick={() => { setForm({}); setShowForm(true) }} style={{ padding: '14px 28px', background: GOLD, color: NAVY, border: 'none', borderRadius: 8, cursor: 'pointer', fontWeight: 600, fontSize: 14, boxShadow: '0 4px 14px rgba(201,162,39,0.35)' }}>+ Neuer Kunde</button>
             </div>
-            <div style={{ display: 'flex', gap: 12, marginBottom: 24 }}>
-              <input placeholder="Suchen..." value={search} onChange={e => setSearch(e.target.value)} style={{ flex: 1, padding: 12, borderRadius: 12, border: '1px solid #e2e8f0' }} />
-              <select value={filter} onChange={e => setFilter(e.target.value)} style={{ padding: 12, borderRadius: 12, border: '1px solid #e2e8f0' }}>
+            <div style={{ display: 'flex', gap: 16, marginBottom: 24 }}>
+              <input placeholder="🔍 Kunden suchen..." value={search} onChange={e => setSearch(e.target.value)} style={{ flex: 1, padding: '14px 20px', borderRadius: 8, border: '2px solid #eef2f6', fontSize: 14, transition: 'border 0.2s', outline: 'none' }} onFocus={e => e.target.style.borderColor = GOLD} onBlur={e => e.target.style.borderColor = '#eef2f6'} />
+              <select value={filter} onChange={e => setFilter(e.target.value)} style={{ padding: '14px 20px', borderRadius: 8, border: '2px solid #eef2f6', fontSize: 14, background: 'white', cursor: 'pointer' }}>
                 <option value="all">Alle Status</option>
                 {STATUS.map(s => <option key={s.id} value={s.id}>{s.label}</option>)}
               </select>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               {filtered.map(c => (
-                <div key={c.id} onClick={() => { setSelected(c); setView('detail') }} style={{ background: 'white', padding: 20, borderRadius: 16, boxShadow: '0 1px 3px rgba(0,0,0,0.1)', cursor: 'pointer' }}>
+                <div key={c.id} onClick={() => { setSelected(c); setView('detail') }} style={{ background: 'white', padding: 24, borderRadius: 12, boxShadow: '0 2px 8px rgba(0,0,0,0.06)', cursor: 'pointer', transition: 'all 0.2s', borderLeft: '4px solid ' + STATUS.find(s => s.id === c.status)?.color }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                     <div>
-                      <div style={{ fontWeight: 600, fontSize: 16 }}>{c.name}</div>
-                      {c.company && <div style={{ fontSize: 14, color: '#64748b' }}>🏢 {c.company}</div>}
-                      <div style={{ fontSize: 14, color: '#64748b', marginTop: 4 }}>{c.email} {c.phone && '• ' + c.phone}</div>
+                      <div style={{ fontWeight: 600, fontSize: 17, color: NAVY }}>{c.name}</div>
+                      {c.company && <div style={{ fontSize: 14, color: '#64748b', marginTop: 4 }}>🏢 {c.company}</div>}
+                      <div style={{ fontSize: 14, color: '#64748b', marginTop: 6 }}>
+                        {c.email && <span>📧 {c.email}</span>}
+                        {c.phone && <span style={{ marginLeft: c.email ? 16 : 0 }}>📞 {c.phone}</span>}
+                      </div>
                     </div>
-                    <span style={{ padding: '6px 14px', borderRadius: 20, fontSize: 12, color: 'white', height: 'fit-content', background: c.status === 'erstkontakt' ? '#3b82f6' : c.status === 'konzept' ? '#f59e0b' : c.status === 'telefonliste' ? '#8b5cf6' : '#10b981' }}>{STATUS.find(s => s.id === c.status)?.label}</span>
+                    <span style={{ padding: '8px 16px', borderRadius: 6, fontSize: 12, color: 'white', fontWeight: 600, height: 'fit-content', background: STATUS.find(s => s.id === c.status)?.color }}>{STATUS.find(s => s.id === c.status)?.label}</span>
                   </div>
-                  {c.tags?.length > 0 && <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>{c.tags.map(t => <span key={t} style={{ padding: '4px 10px', background: '#f1f5f9', borderRadius: 20, fontSize: 12 }}>{t}</span>)}</div>}
+                  {c.tags?.length > 0 && <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>{c.tags.map(t => <span key={t} style={{ padding: '6px 12px', background: '#f8f9fa', borderRadius: 6, fontSize: 12, color: '#64748b', fontWeight: 500 }}>{t}</span>)}</div>}
                 </div>
               ))}
-              {filtered.length === 0 && <p style={{ textAlign: 'center', color: '#94a3b8', padding: 40 }}>Keine Kunden gefunden</p>}
+              {filtered.length === 0 && <p style={{ textAlign: 'center', color: '#94a3b8', padding: 60, background: 'white', borderRadius: 12 }}>Keine Kunden gefunden</p>}
             </div>
           </div>
         )}
 
         {view === 'detail' && selected && (
           <div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-                <button onClick={() => { setSelected(null); setView('customers') }} style={{ padding: 8, background: '#f1f5f9', border: 'none', borderRadius: 8, cursor: 'pointer' }}>←</button>
-                <div style={{ width: 56, height: 56, background: 'linear-gradient(135deg, #3b82f6, #10b981)', borderRadius: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: 24, fontWeight: 'bold' }}>{selected.name?.[0]}</div>
-                <div><h1 style={{ margin: 0, fontSize: 24 }}>{selected.name}</h1>{selected.company && <p style={{ margin: 0, color: '#64748b' }}>🏢 {selected.company}</p>}</div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 32 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
+                <button onClick={() => { setSelected(null); setView('customers') }} style={{ padding: '10px 14px', background: 'white', border: '2px solid #eef2f6', borderRadius: 8, cursor: 'pointer', fontSize: 16 }}>←</button>
+                <div style={{ width: 64, height: 64, background: 'linear-gradient(135deg, ' + NAVY + ', ' + GOLD + ')', borderRadius: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: 26, fontWeight: 700 }}>{selected.name?.[0]}</div>
+                <div>
+                  <h1 style={{ margin: 0, fontSize: 26, color: NAVY, fontWeight: 700 }}>{selected.name}</h1>
+                  {selected.company && <p style={{ margin: '4px 0 0', color: '#64748b', fontSize: 15 }}>🏢 {selected.company}</p>}
+                </div>
               </div>
-              <div style={{ display: 'flex', gap: 8 }}>
-                <button onClick={() => { setForm(selected); setShowForm(true) }} style={{ padding: '10px 16px', background: '#f1f5f9', border: 'none', borderRadius: 8, cursor: 'pointer' }}>✏️ Bearbeiten</button>
-                <button onClick={() => del(selected.id)} style={{ padding: '10px 16px', background: '#fef2f2', color: '#ef4444', border: 'none', borderRadius: 8, cursor: 'pointer' }}>🗑️ Löschen</button>
+              <div style={{ display: 'flex', gap: 10 }}>
+                <button onClick={() => { setForm(selected); setShowForm(true) }} style={{ padding: '12px 20px', background: 'white', border: '2px solid #eef2f6', borderRadius: 8, cursor: 'pointer', fontWeight: 500, color: NAVY }}>✏️ Bearbeiten</button>
+                <button onClick={() => del(selected.id)} style={{ padding: '12px 20px', background: '#fef2f2', color: '#dc2626', border: 'none', borderRadius: 8, cursor: 'pointer', fontWeight: 500 }}>🗑️ Löschen</button>
               </div>
             </div>
 
-            <div style={{ background: 'white', padding: 20, borderRadius: 16, marginBottom: 24, boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
-              <div style={{ fontSize: 14, color: '#64748b', marginBottom: 12 }}>Status-Pipeline</div>
-              <div style={{ display: 'flex', gap: 8 }}>
+            <div style={{ background: 'white', padding: 24, borderRadius: 12, marginBottom: 24, boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
+              <div style={{ fontSize: 14, color: '#64748b', marginBottom: 16, fontWeight: 600 }}>STATUS-PIPELINE</div>
+              <div style={{ display: 'flex', gap: 10 }}>
                 {STATUS.map((s, i) => (
-                  <button key={s.id} onClick={() => updateStatus(selected.id, s.id)} style={{ flex: 1, padding: 12, border: 'none', borderRadius: 8, cursor: 'pointer', fontWeight: 500, color: STATUS.findIndex(x => x.id === selected.status) >= i ? 'white' : '#94a3b8', background: STATUS.findIndex(x => x.id === selected.status) >= i ? (s.color === 'bg-blue-500' ? '#3b82f6' : s.color === 'bg-amber-500' ? '#f59e0b' : s.color === 'bg-purple-500' ? '#8b5cf6' : '#10b981') : '#f1f5f9' }}>{s.label}</button>
+                  <button key={s.id} onClick={() => updateStatus(selected.id, s.id)} style={{ flex: 1, padding: 14, border: 'none', borderRadius: 8, cursor: 'pointer', fontWeight: 600, fontSize: 13, color: STATUS.findIndex(x => x.id === selected.status) >= i ? 'white' : '#94a3b8', background: STATUS.findIndex(x => x.id === selected.status) >= i ? s.color : '#f1f5f9', transition: 'all 0.2s' }}>{s.label}</button>
                 ))}
               </div>
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, marginBottom: 24 }}>
-              <div style={{ background: 'white', padding: 20, borderRadius: 16, boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
-                <h3 style={{ margin: '0 0 16px' }}>Kontaktdaten</h3>
-                <p style={{ margin: '8px 0', color: '#475569' }}>📧 {selected.email || '-'}</p>
-                <p style={{ margin: '8px 0', color: '#475569' }}>📞 {selected.phone || '-'}</p>
-                <p style={{ margin: '8px 0', color: '#475569' }}>📍 {selected.address || '-'}</p>
-                {selected.tags?.length > 0 && <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>{selected.tags.map(t => <span key={t} style={{ padding: '4px 10px', background: '#eff6ff', color: '#3b82f6', borderRadius: 20, fontSize: 12 }}>{t}</span>)}</div>}
+              <div style={{ background: 'white', padding: 24, borderRadius: 12, boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
+                <h3 style={{ margin: '0 0 20px', color: NAVY, fontSize: 16, fontWeight: 600 }}>📋 Kontaktdaten</h3>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                  <p style={{ margin: 0, color: '#475569', display: 'flex', alignItems: 'center', gap: 10 }}><span style={{ width: 28 }}>📧</span> {selected.email || '—'}</p>
+                  <p style={{ margin: 0, color: '#475569', display: 'flex', alignItems: 'center', gap: 10 }}><span style={{ width: 28 }}>📞</span> {selected.phone || '—'}</p>
+                  <p style={{ margin: 0, color: '#475569', display: 'flex', alignItems: 'center', gap: 10 }}><span style={{ width: 28 }}>📍</span> {selected.address || '—'}</p>
+                </div>
+                {selected.tags?.length > 0 && <div style={{ display: 'flex', gap: 8, marginTop: 20, flexWrap: 'wrap' }}>{selected.tags.map(t => <span key={t} style={{ padding: '6px 14px', background: 'rgba(30,58,95,0.08)', color: NAVY, borderRadius: 6, fontSize: 12, fontWeight: 500 }}>{t}</span>)}</div>}
               </div>
-              <div style={{ background: 'white', padding: 20, borderRadius: 16, boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
-                <h3 style={{ margin: '0 0 16px' }}>📝 Notizen</h3>
-                <p style={{ color: '#475569', whiteSpace: 'pre-wrap' }}>{selected.notes || 'Keine Notizen'}</p>
+              <div style={{ background: 'white', padding: 24, borderRadius: 12, boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
+                <h3 style={{ margin: '0 0 20px', color: NAVY, fontSize: 16, fontWeight: 600 }}>📝 Notizen</h3>
+                <p style={{ color: '#475569', whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>{selected.notes || 'Keine Notizen vorhanden'}</p>
               </div>
             </div>
 
-            <div style={{ background: 'white', borderRadius: 16, marginBottom: 24, boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
-              <div style={{ padding: 16, borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between' }}>
-                <h3 style={{ margin: 0 }}>📅 Termine</h3>
-                <button onClick={() => setShowApt(true)} style={{ background: 'none', border: 'none', color: '#3b82f6', cursor: 'pointer' }}>+ Hinzufügen</button>
+            <div style={{ background: 'white', borderRadius: 12, marginBottom: 24, boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
+              <div style={{ padding: '20px 24px', borderBottom: '1px solid #eef2f6', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <h3 style={{ margin: 0, color: NAVY, fontSize: 16, fontWeight: 600 }}>📅 Termine</h3>
+                <button onClick={() => setShowApt(true)} style={{ background: 'none', border: 'none', color: GOLD, cursor: 'pointer', fontWeight: 600, fontSize: 14 }}>+ Hinzufügen</button>
               </div>
               {showApt && (
-                <div style={{ padding: 16, background: '#f8fafc', borderBottom: '1px solid #e2e8f0', display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                  <input type="date" value={aptForm.date} onChange={e => setAptForm(p => ({ ...p, date: e.target.value }))} style={{ padding: 8, borderRadius: 8, border: '1px solid #e2e8f0' }} />
-                  <input type="time" value={aptForm.time} onChange={e => setAptForm(p => ({ ...p, time: e.target.value }))} style={{ padding: 8, borderRadius: 8, border: '1px solid #e2e8f0' }} />
-                  <input placeholder="Beschreibung" value={aptForm.title} onChange={e => setAptForm(p => ({ ...p, title: e.target.value }))} style={{ flex: 1, padding: 8, borderRadius: 8, border: '1px solid #e2e8f0' }} />
-                  <button onClick={addApt} style={{ padding: '8px 16px', background: '#3b82f6', color: 'white', border: 'none', borderRadius: 8, cursor: 'pointer' }}>OK</button>
+                <div style={{ padding: 20, background: '#f8f9fa', borderBottom: '1px solid #eef2f6', display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                  <input type="date" value={aptForm.date} onChange={e => setAptForm(p => ({ ...p, date: e.target.value }))} style={{ padding: 10, borderRadius: 6, border: '2px solid #eef2f6' }} />
+                  <input type="time" value={aptForm.time} onChange={e => setAptForm(p => ({ ...p, time: e.target.value }))} style={{ padding: 10, borderRadius: 6, border: '2px solid #eef2f6' }} />
+                  <input placeholder="Beschreibung" value={aptForm.title} onChange={e => setAptForm(p => ({ ...p, title: e.target.value }))} style={{ flex: 1, padding: 10, borderRadius: 6, border: '2px solid #eef2f6' }} />
+                  <button onClick={addApt} disabled={!aptForm.title || !aptForm.date} style={{ padding: '10px 20px', background: GOLD, color: NAVY, border: 'none', borderRadius: 6, cursor: 'pointer', fontWeight: 600, opacity: aptForm.title && aptForm.date ? 1 : 0.5 }}>Speichern</button>
                 </div>
               )}
-              {(selected.appointments || []).length === 0 ? <p style={{ padding: 16, color: '#94a3b8' }}>Keine Termine</p> : (selected.appointments || []).map((a, i) => (
-                <div key={i} style={{ padding: 16, borderBottom: '1px solid #f1f5f9' }}>
-                  <div style={{ fontWeight: 500 }}>{a.title}</div>
-                  <div style={{ fontSize: 14, color: '#64748b' }}>{a.date} {a.time && 'um ' + a.time + ' Uhr'}</div>
+              {(selected.appointments || []).length === 0 ? <p style={{ padding: 24, color: '#94a3b8', textAlign: 'center' }}>Keine Termine</p> : (selected.appointments || []).map((a, i) => (
+                <div key={i} style={{ padding: '16px 24px', borderBottom: '1px solid #f8f9fa' }}>
+                  <div style={{ fontWeight: 600, color: NAVY }}>{a.title}</div>
+                  <div style={{ fontSize: 13, color: '#64748b', marginTop: 4 }}>📅 {a.date} {a.time && '• 🕐 ' + a.time + ' Uhr'}</div>
                 </div>
               ))}
             </div>
 
-            <div style={{ background: 'white', borderRadius: 16, boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
-              <div style={{ padding: 16, borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between' }}>
-                <h3 style={{ margin: 0 }}>💬 Kontakt-Historie</h3>
-                <button onClick={() => setShowContact(true)} style={{ background: 'none', border: 'none', color: '#3b82f6', cursor: 'pointer' }}>+ Hinzufügen</button>
+            <div style={{ background: 'white', borderRadius: 12, boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
+              <div style={{ padding: '20px 24px', borderBottom: '1px solid #eef2f6', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <h3 style={{ margin: 0, color: NAVY, fontSize: 16, fontWeight: 600 }}>💬 Kontakt-Historie</h3>
+                <button onClick={() => setShowContact(true)} style={{ background: 'none', border: 'none', color: GOLD, cursor: 'pointer', fontWeight: 600, fontSize: 14 }}>+ Hinzufügen</button>
               </div>
               {showContact && (
-                <div style={{ padding: 16, background: '#f8fafc', borderBottom: '1px solid #e2e8f0', display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                  <select value={contactForm.type} onChange={e => setContactForm(p => ({ ...p, type: e.target.value }))} style={{ padding: 8, borderRadius: 8, border: '1px solid #e2e8f0' }}>
+                <div style={{ padding: 20, background: '#f8f9fa', borderBottom: '1px solid #eef2f6', display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                  <select value={contactForm.type} onChange={e => setContactForm(p => ({ ...p, type: e.target.value }))} style={{ padding: 10, borderRadius: 6, border: '2px solid #eef2f6' }}>
                     <option>Telefon</option><option>E-Mail</option><option>Persönlich</option><option>Video-Call</option>
                   </select>
-                  <input placeholder="Was wurde besprochen?" value={contactForm.note} onChange={e => setContactForm(p => ({ ...p, note: e.target.value }))} style={{ flex: 1, padding: 8, borderRadius: 8, border: '1px solid #e2e8f0' }} />
-                  <button onClick={addContact} style={{ padding: '8px 16px', background: '#3b82f6', color: 'white', border: 'none', borderRadius: 8, cursor: 'pointer' }}>OK</button>
+                  <input placeholder="Was wurde besprochen?" value={contactForm.note} onChange={e => setContactForm(p => ({ ...p, note: e.target.value }))} style={{ flex: 1, padding: 10, borderRadius: 6, border: '2px solid #eef2f6' }} />
+                  <button onClick={addContact} disabled={!contactForm.note} style={{ padding: '10px 20px', background: GOLD, color: NAVY, border: 'none', borderRadius: 6, cursor: 'pointer', fontWeight: 600, opacity: contactForm.note ? 1 : 0.5 }}>Speichern</button>
                 </div>
               )}
-              {(selected.contacts || []).length === 0 ? <p style={{ padding: 16, color: '#94a3b8' }}>Keine Kontakte</p> : (selected.contacts || []).map((c, i) => (
-                <div key={i} style={{ padding: 16, borderBottom: '1px solid #f1f5f9' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <span style={{ fontWeight: 500 }}>{c.type}</span>
-                    <span style={{ fontSize: 14, color: '#94a3b8' }}>{c.date}</span>
+              {(selected.contacts || []).length === 0 ? <p style={{ padding: 24, color: '#94a3b8', textAlign: 'center' }}>Keine Kontakte erfasst</p> : (selected.contacts || []).map((c, i) => (
+                <div key={i} style={{ padding: '16px 24px', borderBottom: '1px solid #f8f9fa' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontWeight: 600, color: NAVY, display: 'flex', alignItems: 'center', gap: 8 }}>
+                      {c.type === 'Telefon' && '📞'}{c.type === 'E-Mail' && '📧'}{c.type === 'Persönlich' && '🤝'}{c.type === 'Video-Call' && '💻'} {c.type}
+                    </span>
+                    <span style={{ fontSize: 13, color: '#94a3b8' }}>{c.date}</span>
                   </div>
                   <p style={{ margin: '8px 0 0', color: '#475569' }}>{c.note}</p>
                 </div>
@@ -277,33 +315,33 @@ export default function CRM() {
       </main>
 
       {showForm && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
-          <div style={{ background: 'white', borderRadius: 16, padding: 24, width: '100%', maxWidth: 480, maxHeight: '90vh', overflow: 'auto' }}>
-            <h3 style={{ margin: '0 0 20px' }}>{form.id ? 'Kunde bearbeiten' : 'Neuer Kunde'}</h3>
-            <input placeholder="Name *" value={form.name || ''} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} style={{ width: '100%', padding: 12, borderRadius: 8, border: '1px solid #e2e8f0', marginBottom: 12 }} />
-            <input placeholder="Firma" value={form.company || ''} onChange={e => setForm(p => ({ ...p, company: e.target.value }))} style={{ width: '100%', padding: 12, borderRadius: 8, border: '1px solid #e2e8f0', marginBottom: 12 }} />
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
-              <input placeholder="Email" value={form.email || ''} onChange={e => setForm(p => ({ ...p, email: e.target.value }))} style={{ padding: 12, borderRadius: 8, border: '1px solid #e2e8f0' }} />
-              <input placeholder="Telefon" value={form.phone || ''} onChange={e => setForm(p => ({ ...p, phone: e.target.value }))} style={{ padding: 12, borderRadius: 8, border: '1px solid #e2e8f0' }} />
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(30,58,95,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16, backdropFilter: 'blur(4px)' }}>
+          <div style={{ background: 'white', borderRadius: 16, padding: 32, width: '100%', maxWidth: 520, maxHeight: '90vh', overflow: 'auto', boxShadow: '0 24px 48px rgba(0,0,0,0.2)' }}>
+            <h3 style={{ margin: '0 0 24px', color: NAVY, fontSize: 22, fontWeight: 700 }}>{form.id ? 'Kunde bearbeiten' : 'Neuer Kunde'}</h3>
+            <input placeholder="Name *" value={form.name || ''} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} style={{ width: '100%', padding: 14, borderRadius: 8, border: '2px solid #eef2f6', marginBottom: 16, fontSize: 15 }} />
+            <input placeholder="Firma" value={form.company || ''} onChange={e => setForm(p => ({ ...p, company: e.target.value }))} style={{ width: '100%', padding: 14, borderRadius: 8, border: '2px solid #eef2f6', marginBottom: 16, fontSize: 15 }} />
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
+              <input placeholder="E-Mail" value={form.email || ''} onChange={e => setForm(p => ({ ...p, email: e.target.value }))} style={{ padding: 14, borderRadius: 8, border: '2px solid #eef2f6', fontSize: 15 }} />
+              <input placeholder="Telefon" value={form.phone || ''} onChange={e => setForm(p => ({ ...p, phone: e.target.value }))} style={{ padding: 14, borderRadius: 8, border: '2px solid #eef2f6', fontSize: 15 }} />
             </div>
-            <input placeholder="Adresse" value={form.address || ''} onChange={e => setForm(p => ({ ...p, address: e.target.value }))} style={{ width: '100%', padding: 12, borderRadius: 8, border: '1px solid #e2e8f0', marginBottom: 12 }} />
+            <input placeholder="Adresse" value={form.address || ''} onChange={e => setForm(p => ({ ...p, address: e.target.value }))} style={{ width: '100%', padding: 14, borderRadius: 8, border: '2px solid #eef2f6', marginBottom: 16, fontSize: 15 }} />
             {form.id && (
-              <select value={form.status || 'erstkontakt'} onChange={e => setForm(p => ({ ...p, status: e.target.value }))} style={{ width: '100%', padding: 12, borderRadius: 8, border: '1px solid #e2e8f0', marginBottom: 12 }}>
+              <select value={form.status || 'erstkontakt'} onChange={e => setForm(p => ({ ...p, status: e.target.value }))} style={{ width: '100%', padding: 14, borderRadius: 8, border: '2px solid #eef2f6', marginBottom: 16, fontSize: 15, background: 'white' }}>
                 {STATUS.map(s => <option key={s.id} value={s.id}>{s.label}</option>)}
               </select>
             )}
-            <div style={{ marginBottom: 12 }}>
-              <div style={{ fontSize: 14, color: '#64748b', marginBottom: 8 }}>Tags</div>
+            <div style={{ marginBottom: 16 }}>
+              <div style={{ fontSize: 14, color: '#64748b', marginBottom: 10, fontWeight: 600 }}>Tags</div>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                 {TAGS.map(t => (
-                  <button key={t} type="button" onClick={() => setForm(p => ({ ...p, tags: (p.tags || []).includes(t) ? p.tags.filter(x => x !== t) : [...(p.tags || []), t] }))} style={{ padding: '6px 12px', borderRadius: 20, border: 'none', cursor: 'pointer', background: (form.tags || []).includes(t) ? '#3b82f6' : '#f1f5f9', color: (form.tags || []).includes(t) ? 'white' : '#475569' }}>{t}</button>
+                  <button key={t} type="button" onClick={() => setForm(p => ({ ...p, tags: (p.tags || []).includes(t) ? p.tags.filter(x => x !== t) : [...(p.tags || []), t] }))} style={{ padding: '8px 16px', borderRadius: 6, border: 'none', cursor: 'pointer', background: (form.tags || []).includes(t) ? GOLD : '#f1f5f9', color: (form.tags || []).includes(t) ? NAVY : '#64748b', fontWeight: 500, transition: 'all 0.2s' }}>{t}</button>
                 ))}
               </div>
             </div>
-            <textarea placeholder="Notizen" value={form.notes || ''} onChange={e => setForm(p => ({ ...p, notes: e.target.value }))} style={{ width: '100%', padding: 12, borderRadius: 8, border: '1px solid #e2e8f0', marginBottom: 16, minHeight: 80 }} />
+            <textarea placeholder="Notizen" value={form.notes || ''} onChange={e => setForm(p => ({ ...p, notes: e.target.value }))} style={{ width: '100%', padding: 14, borderRadius: 8, border: '2px solid #eef2f6', marginBottom: 24, minHeight: 100, fontSize: 15, resize: 'vertical' }} />
             <div style={{ display: 'flex', gap: 12 }}>
-              <button onClick={save} disabled={!form.name} style={{ flex: 1, padding: 12, background: '#3b82f6', color: 'white', border: 'none', borderRadius: 8, cursor: 'pointer', opacity: form.name ? 1 : 0.5 }}>Speichern</button>
-              <button onClick={() => setShowForm(false)} style={{ padding: '12px 24px', background: '#f1f5f9', border: 'none', borderRadius: 8, cursor: 'pointer' }}>Abbrechen</button>
+              <button onClick={save} disabled={!form.name} style={{ flex: 1, padding: 16, background: GOLD, color: NAVY, border: 'none', borderRadius: 8, cursor: 'pointer', fontWeight: 600, fontSize: 15, opacity: form.name ? 1 : 0.5 }}>Speichern</button>
+              <button onClick={() => setShowForm(false)} style={{ padding: '16px 28px', background: '#f1f5f9', border: 'none', borderRadius: 8, cursor: 'pointer', fontWeight: 500, fontSize: 15, color: '#64748b' }}>Abbrechen</button>
             </div>
           </div>
         </div>
@@ -326,18 +364,28 @@ function Login({ onLogin }) {
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #1e293b, #0f172a)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
-      <div style={{ background: 'rgba(255,255,255,0.1)', backdropFilter: 'blur(10px)', padding: 40, borderRadius: 24, width: '100%', maxWidth: 400, border: '1px solid rgba(255,255,255,0.2)' }}>
-        <div style={{ textAlign: 'center', marginBottom: 32 }}>
-          <div style={{ width: 64, height: 64, background: 'linear-gradient(135deg, #3b82f6, #10b981)', borderRadius: 20, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px', color: 'white', fontSize: 28, fontWeight: 'bold' }}>C</div>
-          <h1 style={{ color: 'white', margin: 0 }}>Mini CRM</h1>
-          <p style={{ color: '#94a3b8', margin: '8px 0 0' }}>Kundenmanagement</p>
+    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, ' + NAVY + ' 0%, #0f172a 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
+      <div style={{ background: 'rgba(255,255,255,0.03)', backdropFilter: 'blur(20px)', padding: 48, borderRadius: 24, width: '100%', maxWidth: 420, border: '1px solid rgba(255,255,255,0.1)', boxShadow: '0 32px 64px rgba(0,0,0,0.3)' }}>
+        <div style={{ textAlign: 'center', marginBottom: 40 }}>
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 16, marginBottom: 16 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+              <div style={{ width: 10, height: 40, background: 'transparent', border: '3px solid ' + GOLD, marginRight: 4 }}></div>
+              <div style={{ width: 20, height: 20, borderBottom: '4px solid ' + GOLD, borderRight: '4px solid ' + GOLD, transform: 'rotate(45deg)', marginTop: -16 }}></div>
+            </div>
+            <div>
+              <div style={{ color: GOLD, fontSize: 32, fontWeight: 700, letterSpacing: 2 }}>V&C</div>
+              <div style={{ color: GOLD, fontSize: 18, fontWeight: 600, letterSpacing: 4 }}>FINANZ</div>
+            </div>
+          </div>
+          <p style={{ color: 'rgba(255,255,255,0.5)', margin: 0, fontSize: 14 }}>Kundenmanagement</p>
         </div>
-        <input placeholder="Benutzername" value={u} onChange={e => setU(e.target.value)} style={{ width: '100%', padding: 14, borderRadius: 12, border: 'none', background: 'rgba(255,255,255,0.1)', color: 'white', marginBottom: 12 }} />
-        <input type="password" placeholder="Passwort" value={p} onChange={e => setP(e.target.value)} onKeyPress={e => e.key === 'Enter' && submit()} style={{ width: '100%', padding: 14, borderRadius: 12, border: 'none', background: 'rgba(255,255,255,0.1)', color: 'white', marginBottom: 12 }} />
-        {err && <p style={{ color: '#f87171', fontSize: 14, margin: '0 0 12px' }}>{err}</p>}
-        <button onClick={submit} disabled={loading} style={{ width: '100%', padding: 14, background: 'linear-gradient(135deg, #3b82f6, #10b981)', color: 'white', border: 'none', borderRadius: 12, cursor: 'pointer', fontWeight: 600 }}>{loading ? 'Laden...' : 'Anmelden'}</button>
-        <p style={{ color: '#64748b', fontSize: 12, textAlign: 'center', marginTop: 24 }}>Demo: admin / admin123</p>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <input placeholder="Benutzername" value={u} onChange={e => setU(e.target.value)} style={{ width: '100%', padding: 16, borderRadius: 10, border: '2px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)', color: 'white', fontSize: 15 }} />
+          <input type="password" placeholder="Passwort" value={p} onChange={e => setP(e.target.value)} onKeyPress={e => e.key === 'Enter' && submit()} style={{ width: '100%', padding: 16, borderRadius: 10, border: '2px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)', color: 'white', fontSize: 15 }} />
+          {err && <p style={{ color: '#f87171', fontSize: 14, margin: 0, padding: '12px 16px', background: 'rgba(248,113,113,0.1)', borderRadius: 8 }}>{err}</p>}
+          <button onClick={submit} disabled={loading} style={{ width: '100%', padding: 16, background: 'linear-gradient(135deg, ' + GOLD + ', #d4af37)', color: NAVY, border: 'none', borderRadius: 10, cursor: 'pointer', fontWeight: 700, fontSize: 15, marginTop: 8, boxShadow: '0 8px 24px rgba(201,162,39,0.3)' }}>{loading ? 'Laden...' : 'Anmelden'}</button>
+        </div>
+        <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: 12, textAlign: 'center', marginTop: 32 }}>Demo: admin / admin123</p>
       </div>
     </div>
   )
